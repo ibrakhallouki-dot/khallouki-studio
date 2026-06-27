@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --gold: #B8960C;
+  --silver: #C0C0C0;
+  --black: #0A0A0A;
+}
+
+.font-inter{ font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial }
+.font-playfair{ font-family: 'Playfair Display', serif }
+.text-gold{ color: var(--gold) }
+.text-silver{ color: var(--silver) }
+.bg-black{ background-color: var(--black) }

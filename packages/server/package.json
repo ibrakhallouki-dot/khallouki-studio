@@ -1,0 +1,23 @@
+{
+  "name": "server",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p .",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "latest",
+    "@trpc/server": "latest",
+    "zod": "latest",
+    "dotenv": "latest",
+    "supabase-js": "latest",
+    "drizzle-orm": "latest",
+    "pg": "latest"
+  },
+  "devDependencies": {
+    "ts-node-dev": "latest",
+    "typescript": "latest"
+  }
+}

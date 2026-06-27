@@ -1,0 +1,13 @@
+{
+  "name": "khallouki-studio",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm -w -r run dev",
+    "build": "pnpm -w -r run build",
+    "start": "pnpm -w -r run start"
+  }
+}
