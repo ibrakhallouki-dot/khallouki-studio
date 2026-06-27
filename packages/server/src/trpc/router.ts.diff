@@ -1,0 +1,22 @@
+diff --git a/packages/server/src/trpc/router.ts b/packages/server/src/trpc/router.ts
+index 0000000..0000000 100644
+--- a/packages/server/src/trpc/router.ts
++++ b/packages/server/src/trpc/router.ts
+@@
+-import { initTRPC } from '@trpc/server'
+-import { createTRPCContext } from './context'
+-import { designsRouter } from './routers/designs'
+-import { resourcesRouter } from './routers/resources'
+-import { interactionsRouter } from './routers/interactions'
+-
+-const t = initTRPC.context<any>().create()
+-
+-export const appRouter = t.router({
+-  designs: designsRouter,
+-  resources: resourcesRouter,
+-  interactions: interactionsRouter,
+-  health: t.procedure.query(() => ({ ok: true }))
+-})
+-
+-export type AppRouter = typeof appRouter
++// Router assembled in CommonJS form in sibling file to avoid TS/ESM module resolution issues

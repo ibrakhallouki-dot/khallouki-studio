@@ -1,6 +1,20 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { trpc } from './lib/trpc'
 
 export default function App(){
+  const [featured, setFeatured] = useState<any[]>([])
+  useEffect(() => {
+    async function load(){
+      try{
+        const res = await trpc.designs.list.query({ page: 1, perPage: 6 })
+        setFeatured(res.items ?? [])
+      }catch(err){
+        console.error('tRPC error', err)
+      }
+    }
+    load()
+  }, [])
+
   return (
     <div className="min-h-screen bg-black text-white font-inter">
       <header className="py-8 px-6 border-b border-gray-800">
@@ -21,21 +35,31 @@ export default function App(){
         </section>
 
         <section className="grid grid-cols-3 gap-4 mt-8">
-          <article className="bg-gray-900 p-4 rounded">
-            <div className="h-40 bg-gray-800 rounded mb-3" />
-            <h3 className="text-lg font-semibold">Featured design</h3>
-            <p className="text-sm text-silver mt-2">Short description</p>
-          </article>
-          <article className="bg-gray-900 p-4 rounded">
-            <div className="h-40 bg-gray-800 rounded mb-3" />
-            <h3 className="text-lg font-semibold">Featured design</h3>
-            <p className="text-sm text-silver mt-2">Short description</p>
-          </article>
-          <article className="bg-gray-900 p-4 rounded">
-            <div className="h-40 bg-gray-800 rounded mb-3" />
-            <h3 className="text-lg font-semibold">Featured design</h3>
-            <p className="text-sm text-silver mt-2">Short description</p>
-          </article>
+          {featured.length ? featured.map((f:any)=> (
+            <article key={f.id} className="bg-gray-900 p-4 rounded">
+              <div className="h-40 bg-gray-800 rounded mb-3" style={{backgroundImage: `url(${f.image_url})`, backgroundSize: 'cover'}} />
+              <h3 className="text-lg font-semibold">{f.title}</h3>
+              <p className="text-sm text-silver mt-2">{f.description}</p>
+            </article>
+          )) : (
+            <>
+            <article className="bg-gray-900 p-4 rounded">
+              <div className="h-40 bg-gray-800 rounded mb-3" />
+              <h3 className="text-lg font-semibold">Featured design</h3>
+              <p className="text-sm text-silver mt-2">Short description</p>
+            </article>
+            <article className="bg-gray-900 p-4 rounded">
+              <div className="h-40 bg-gray-800 rounded mb-3" />
+              <h3 className="text-lg font-semibold">Featured design</h3>
+              <p className="text-sm text-silver mt-2">Short description</p>
+            </article>
+            <article className="bg-gray-900 p-4 rounded">
+              <div className="h-40 bg-gray-800 rounded mb-3" />
+              <h3 className="text-lg font-semibold">Featured design</h3>
+              <p className="text-sm text-silver mt-2">Short description</p>
+            </article>
+            </>
+          )}
         </section>
       </main>
 

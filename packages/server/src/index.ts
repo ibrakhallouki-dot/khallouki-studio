@@ -2,6 +2,7 @@ import express from 'express'
 import * as trpcExpress from '@trpc/server/adapters/express'
 import { appRouter } from './trpc/router'
 import dotenv from 'dotenv'
+import { createTRPCContext } from './trpc/context'
 
 dotenv.config()
 
@@ -14,7 +15,7 @@ app.use(
   '/trpc',
   trpcExpress.createExpressMiddleware({
     router: appRouter,
-    createContext: () => ({})
+    createContext: createTRPCContext
   })
 )
 
