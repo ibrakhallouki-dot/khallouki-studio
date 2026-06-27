@@ -4,10 +4,16 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-const connectionString = process.env.DATABASE_URL
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not set in environment')
+const connectionString = process.env.DATABASE_URL || ''
+
+let pool: Pool | null = null
+let db: any = null
+
+if (connectionString) {
+  pool = new Pool({ connectionString })
+  db = drizzle(pool)
+} else {
+  console.warn('DATABASE_URL not set — database client will not be initialized. See packages/server/.env.example')
 }
 
-const pool = new Pool({ connectionString })
-export const db = drizzle(pool)
+export { pool, db }

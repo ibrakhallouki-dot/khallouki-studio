@@ -1,12 +1,13 @@
 import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
+import { createTRPCContext } from './context'
+import { designsRouter } from './routers/designs'
 
-const t = initTRPC.create()
+const t = initTRPC.context<typeof ({} as any)>().create()
 
+// Root router
 export const appRouter = t.router({
-  hello: t.procedure
-    .input(z.object({ name: z.string().optional() }).optional())
-    .query(({ input }) => ({ greeting: `Hello ${input?.name ?? 'world'}` })),
+  designs: designsRouter,
   health: t.procedure.query(() => ({ ok: true }))
 })
 
