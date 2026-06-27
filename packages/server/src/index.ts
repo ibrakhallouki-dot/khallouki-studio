@@ -1,3 +1,4 @@
+import cors from 'cors'
 import express from 'express'
 import * as trpcExpress from '@trpc/server/adapters/express'
 import { appRouter } from './trpc/router'
@@ -8,6 +9,7 @@ dotenv.config()
 
 const app = express()
 app.use(express.json())
+app.use(cors())
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
