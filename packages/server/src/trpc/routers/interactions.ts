@@ -103,7 +103,7 @@ export const interactionsRouter = t.router({
       try {
         await client.query('BEGIN')
         await client.query('INSERT INTO design_downloads (design_id, user_id, created_at) VALUES ($1, $2, now())', [input.designId, input.userId || null])
-        await client.query('UPDATE designs SET downloads_count = downloads_count + 1 WHERE id = $1', [input.designId])
+        await client.query('UPDATE designs SET downloads_count = COALESCE(downloads_count,0) + 1 WHERE id = $1', [input.designId])
         await client.query('COMMIT')
         return { ok: true }
       } catch (err) {
