@@ -1,4 +1,3 @@
-import { createServerSupabaseClient, SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@supabase/supabase-js'
 
 // Server-side Supabase helper. Does NOT include credentials — set via env vars.
@@ -19,5 +18,3 @@ export function getSupabaseAdminClient() {
   supabaseAdmin = createClient(url, serviceKey)
   return supabaseAdmin
 }
-
-// TODO: Add helpers for generating signed URLs, managing users, and other server-side Supabase operations.
