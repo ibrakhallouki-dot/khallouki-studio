@@ -1,64 +1,54 @@
 import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
+import { db, pool } from '../../db'
 
 const t = initTRPC.context<any>().create()
 
 export const usersRouter = t.router({
-  profile: t.procedure
-    .input(z.object({ userId: z.string() }))
-    .query(async ({ input }) => {
-      const { db } = require('../../db')
-      if (!db) return { user: null, warning: 'DATABASE_URL not set' }
+  me: t.procedure.query(async ({ ctx }) => {
+    if (!ctx.user) return { user: null }
+    if (!ctx.pool) return { user: ctx.user }
 
-      const rows = await db.select().from('users').where({ id: input.userId }).limit(1)
-      return { user: rows[0] ?? null }
-    }),
+    try {
+      const res = await ctx.pool.query('SELECT id, email, display_name, avatar_url, role, created_at FROM users WHERE id = $1 LIMIT 1', [ctx.user.id])
+      return { user: res.rows[0] ?? null }
+    } catch (err) {
+      console.error('users.me error', err)
+      return { user: null, error: String(err) }
+    }
+  }),
 
-  myDesigns: t.procedure
-    .input(z.object({ userId: z.string(), page: z.number().min(1).default(1), perPage: z.number().min(1).default(12) }))
-    .query(async ({ input }) => {
-      const { db } = require('../../db')
-      if (!db) return { items: [], total: 0, warning: 'DATABASE_URL not set' }
+  sync: t.procedure
+    .input(
+      z.object({
+        id: z.string(),
+        email: z.string().optional(),
+        displayName: z.string().optional(),
+        avatarUrl: z.string().optional(),
+        role: z.string().optional()
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.pool) return { ok: false, warning: 'DATABASE_URL not set' }
 
-      const offset = (input.page - 1) * input.perPage
-      const items = await db.select().from('designs').where({ creator_id: input.userId }).limit(input.perPage).offset(offset)
-      const totalRes = await db.select().from('designs').where({ creator_id: input.userId })
-      const total = Array.isArray(totalRes) ? totalRes.length : 0
-      return { items, total }
-    }),
-
-  favorites: t.procedure
-    .input(z.object({ userId: z.string(), page: z.number().min(1).default(1), perPage: z.number().min(1).default(12) }))
-    .query(async ({ input }) => {
-      const { pool } = require('../../db')
-      if (!pool) return { items: [], total: 0, warning: 'DATABASE_URL not set' }
-
-      const client = await pool.connect()
+      const client = await ctx.pool.connect()
       try {
-        const offset = (input.page - 1) * input.perPage
-        const res = await client.query('\n          SELECT d.* FROM designs d \n          JOIN design_favorites f ON f.design_id = d.id \n          WHERE f.user_id = $1 \n          ORDER BY f.created_at DESC \n          LIMIT $2 OFFSET $3\n        ', [input.userId, input.perPage, offset])
-        const countRes = await client.query('SELECT COUNT(*) as cnt FROM design_favorites WHERE user_id = $1', [input.userId])
-        const items = res.rows
-        const total = parseInt(countRes.rows[0]?.cnt || '0', 10)
-        return { items, total }
-      } finally {
-        client.release()
-      }
-    }),
-
-  downloadHistory: t.procedure
-    .input(z.object({ userId: z.string(), page: z.number().min(1).default(1), perPage: z.number().min(1).default(12) }))
-    .query(async ({ input }) => {
-      const { pool } = require('../../db')
-      if (!pool) return { items: [], total: 0, warning: 'DATABASE_URL not set' }
-      const client = await pool.connect()
-      try {
-        const offset = (input.page - 1) * input.perPage
-        const res = await client.query('\n          SELECT d.* , dd.created_at as downloaded_at FROM design_downloads dd\n          JOIN designs d ON d.id = dd.design_id\n          WHERE dd.user_id = $1\n          ORDER BY dd.created_at DESC\n          LIMIT $2 OFFSET $3\n        ', [input.userId, input.perPage, offset])
-        const countRes = await client.query('SELECT COUNT(*) as cnt FROM design_downloads WHERE user_id = $1', [input.userId])
-        const items = res.rows
-        const total = parseInt(countRes.rows[0]?.cnt || '0', 10)
-        return { items, total }
+        await client.query('BEGIN')
+        await client.query(
+          `INSERT INTO users (id, email, display_name, avatar_url, role) VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (id) DO UPDATE SET
+             email = EXCLUDED.email,
+             display_name = EXCLUDED.display_name,
+             avatar_url = EXCLUDED.avatar_url,
+             role = COALESCE(EXCLUDED.role, users.role)`,
+          [input.id, input.email || null, input.displayName || null, input.avatarUrl || null, input.role || 'user']
+        )
+        await client.query('COMMIT')
+        return { ok: true }
+      } catch (err) {
+        await client.query('ROLLBACK')
+        console.error('users.sync error', err)
+        return { ok: false, error: String(err) }
       } finally {
         client.release()
       }
