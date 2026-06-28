@@ -1,17 +1,46 @@
 import { inferAsyncReturnType } from '@trpc/server'
-import * as trpc from '@trpc/server'
 import { Request, Response } from 'express'
 import { getSupabaseAdminClient } from '../services/supabase'
 import { db, pool } from '../db'
 
 export async function createContext({ req, res }: { req: Request; res: Response }) {
-  // NOTE: This context attempts to initialize a Supabase admin client if credentials are present.
-  // If not present, the supabaseAdmin client will be null and auth-related procedures should
-  // handle unauthenticated flows gracefully.
   const supabaseAdmin = getSupabaseAdminClient()
 
-  // TODO: When SUPABASE_SERVICE_ROLE_KEY is set, use supabaseAdmin to verify incoming bearer tokens
-  // and populate `user` in context. For now, we leave user as null and let procedures enforce auth as needed.
+  const authHeader = req.headers.authorization
+  const token = typeof authHeader === 'string' && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+  let user: null | { id: string; email?: string; role?: string } = null
+
+  if (supabaseAdmin && token) {
+    try {
+      // supabase-js v2: auth.getUser(token)
+      // Fallback: some versions expose auth.api.getUserByCookie or similar; we defensively check for getUser.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyAuth: any = (supabaseAdmin as any).auth
+      if (anyAuth && typeof anyAuth.getUser === 'function') {
+        // getUser expects an access_token string
+        // returns { data: { user }, error }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resGetUser: any = await anyAuth.getUser(token)
+        if (resGetUser?.data?.user) {
+          const u = resGetUser.data.user
+          user = { id: u.id, email: u.email ?? undefined, role: (u.user_metadata && u.user_metadata.role) || undefined }
+        }
+      } else if ((anyAuth && typeof anyAuth.getUserByCookie === 'function')) {
+        // older server helpers: not expected in this setup, but kept for safety
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resGetUser: any = await anyAuth.getUserByCookie({ token })
+        if (resGetUser?.user) {
+          const u = resGetUser.user
+          user = { id: u.id, email: u.email ?? undefined, role: (u.user_metadata && u.user_metadata.role) || undefined }
+        }
+      } else {
+        console.warn('Supabase admin client present but auth.getUser not available; skipping user population')
+      }
+    } catch (err) {
+      console.error('Error verifying supabase token', err)
+    }
+  }
 
   return {
     req,
@@ -19,7 +48,7 @@ export async function createContext({ req, res }: { req: Request; res: Response 
     db,
     pool,
     supabaseAdmin,
-    user: null as null | { id: string; email?: string; role?: string }
+    user
   }
 }
 
