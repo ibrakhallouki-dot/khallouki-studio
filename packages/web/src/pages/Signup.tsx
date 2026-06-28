@@ -10,9 +10,9 @@ export default function Signup(){
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // If supabase client exists we would call signUp; fallback to ensureUserFromSupabase mock
     try{
       const u = await users.mutateAsync({ supabase_id: `local-${email}`, email })
+      if (typeof window !== 'undefined') window.localStorage.setItem('kh_session', `user:${u.id}`)
       navigate('/dashboard')
     }catch(err:any){
       alert(err.message||'Signup failed')
